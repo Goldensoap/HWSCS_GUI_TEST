@@ -2,77 +2,40 @@ import sys
 import random
 from ctypes import *
 import serial
-from cmd_test_ui  import  *
+from cmd_test_ui  import *
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QMainWindow
 
-class Uart:
+
+port = ''
+cmd = bytes
+class UartThread(QThread):
     r'''uart function ,this class is used in writing attributes to usb
     '''
-    def __init__(self,port:str):
-        self._ser = serial.Serial(port=port,baudrate=115200,timeout=1)
-    def port_write(self, command:bytes)->bool:
-        r'''write ascii command to usb serial
-        input parameters
-            - command : the bytes type data 
-        '''
-        try:
-            flag = False
-            if self._ser.is_open != True:
-                self._ser.open()
-            self._ser.write(command)
-        except serial.SerialException as s:
-            pass
-        except Exception as e:
-            pass
+    trigger = pyqtSignal(dict)
+    def __init__(self,parent=None):
+        super(UartThread,self).__init__()
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        global cmd
+        global port
+
+        with serial.Serial(port=port,baudrate=115200,timeout=0.1) as ser:
+            ser.write(cmd)
+            ACK = ser.readlines()
+
+        if len(ACK)==0:
+            ACK = "NO ACK"
         else:
-            flag = True
-        finally:
-            return flag
-
-    def port_read(self)->bytes:
-        r'''read char type data from port
-            return (bytes)info
-        '''
-        try:
-            if self._ser.is_open != True:
-                self._ser.open()
-            info = self._ser.read(size=4)
-        except serial.SerialException as s:
-            pass
-        except Exception as e:
-            pass
-        finally:
-            return info
-
-    def encode_int_hex_to_byte(self,numberList:list)->bytes:
-        r'''
-        input 0<= number =<255
-        return hex str like 0d or f1
-        '''
-        hexStr = ''
-
-        for number in numberList:
-            hexNum = format(number,'x')
-            if len(hexNum) == 1:
-                hexNum = '0'+hexNum
-            hexStr += hexNum
-
-        char = bytes.fromhex(hexStr)
-
-        return char
-
-    def decode_byte_to_int(self,info:bytes)->list:
-        r'''
-        '''
-        res = []
-        for ele in info:
-            res.append(int(ele))
-        return res,len(res)
-
+            ACK = str(ACK)
+        self.trigger.emit({"ACK":ACK})
 
 class MyWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
-        super().__init__()
+        super(MyWindow,self).__init__()
         self.setupUi(self)
         self.init_option()
 
@@ -81,26 +44,32 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         '''
         self.SendCMD.clicked.connect(self.button_click)
 
+        self.thread = UartThread(self)
+        self.thread.trigger.connect(self.uart_ACK_display)
+
     def button_click(self):
         r'''发送指令按钮回调函数
         '''
-        content =self.CMDInput.toPlainText() #输入16进制表示的Unicode字符串,转换成对应的二进制数，保证命令内容在3Byte以内
+        try:
+            global port,cmd
+            content =self.CMDInput.toPlainText() #输入16进制表示的Unicode字符串,转换成对应的二进制数，保证命令内容在3Byte以内
+            
+            port = self.PortName.text() #获取串口设备名称
+            
+            cmdstr ,label,crc= self.cmd_pack(content)  #包装命令帧
+            self.CRCDisplay.setText(crc)
+            self.CMDLabelDisplay.setText(label)
+            self.CMDBrowser.setText(cmdstr+"字节数:"+str(int(len(cmdstr)/2)))
+            cmd = bytes.fromhex(cmdstr)
+            #QApplication.processEvents()
+            self.thread.start()
+            self.SendCMD.setEnabled(False)
+        except ValueError as v:
+            self.ACKDisplay.setText("发生错误：{}".format(v))
 
-        port = self.PortName.text() #获取串口设备名称
-
-        cmd ,label,crc= self.cmd_pack(content)  #包装命令帧
-        self.CRCDisplay.setText(crc)
-        self.CMDLabelDisplay.setText(label)
-        self.CMDBrowser.setText(cmd+"字节数:"+str(int(len(cmd)/2)))
-
-        serial = Uart(port)
-        serial.port_write(bytes.fromhex(cmd)) #发送命令
-
-        ACK = serial.port_read() #等待ACK
-        if len(ACK)==0:
-            ACK = "NO ACK"
-        self.ACKDisplay.setText(str(ACK)+"字节数："+str(len(ACK)))
-
+    def uart_ACK_display(self,value:dict):
+        self.ACKDisplay.setText(value["ACK"]+"字节数："+str(len(value["ACK"])))
+        self.SendCMD.setEnabled(True)
 
     def crc_check(self,data:bytes)->str:
         r'''CRC校验函数
