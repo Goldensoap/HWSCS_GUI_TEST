@@ -38,14 +38,17 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         super(MyWindow,self).__init__()
         self.setupUi(self)
         self.init_option()
-
+        self.cmd_type = "01"
+        self.port_type = "COM"
     def init_option(self):
         r'''初始化UI操作逻辑
         '''
-        self.SendCMD.clicked.connect(self.button_click)
+        self.SendCMDButton.clicked.connect(self.button_click)
 
         self.thread = UartThread(self)
         self.thread.trigger.connect(self.uart_ACK_display)
+        self.SerialPortTypeBox.activated.connect(self.select_port_type)
+        self.CMDTypeBox.activated.connect(self.select_cmd_type)
 
     def button_click(self):
         r'''发送指令按钮回调函数
@@ -54,8 +57,8 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             global port,cmd
             content =self.CMDInput.toPlainText() #输入16进制表示的Unicode字符串,转换成对应的二进制数，保证命令内容在3Byte以内
             
-            port = self.PortName.text() #获取串口设备名称
-            
+            port = self.port_type+self.PortName.text() #获取串口设备名称
+            content = self.cmd_type+content
             cmdstr ,label,crc= self.cmd_pack(content)  #包装命令帧
             self.CRCDisplay.setText(crc)
             self.CMDLabelDisplay.setText(label)
@@ -63,13 +66,28 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             cmd = bytes.fromhex(cmdstr)
             #QApplication.processEvents()
             self.thread.start()
-            self.SendCMD.setEnabled(False)
+            self.SendCMDButton.setEnabled(False)
         except ValueError as v:
             self.ACKDisplay.setText("发生错误：{}".format(v))
 
+    def select_cmd_type(self):
+        type_dict = {   
+                        "时间同步":"01",
+                        "传感信息":"02",
+                        "节点控制":"03",
+                        "路由信息":"04",
+                        "设备状态":"05",
+                        "网络变更":"06"
+                    }
+
+        self.cmd_type = type_dict[self.CMDTypeBox.currentText()]
+
+    def select_port_type(self):
+        self.port_type = self.SerialPortTypeBox.currentText()
+
     def uart_ACK_display(self,value:dict):
         self.ACKDisplay.setText(value["ACK"]+"字节数："+str(len(value["ACK"])))
-        self.SendCMD.setEnabled(True)
+        self.SendCMDButton.setEnabled(True)
 
     def crc_check(self,data:bytes)->str:
         r'''CRC校验函数
