@@ -790,7 +790,7 @@
      <string>连续发送信息</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox">
+   <widget class="QCheckBox" name="ACKcheck">
     <property name="geometry">
      <rect>
       <x>220</x>

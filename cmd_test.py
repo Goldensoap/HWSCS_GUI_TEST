@@ -166,6 +166,11 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         '''
         cmd = bytes.fromhex(self.generate_cmd())#获取指令内容,转换为二进制
         self.uart_port_work_thread.pipe.emit({"content":cmd,"signal":True})
+        if self.ACKcheck.isChecked(): #模拟mesh回复ACK
+            ack,_ = self.msg_pack("03"+self.CMDLabelDisplay.toPlainText())
+            time.sleep(0.1)
+            self.uart_port_work_thread_2.pipe.emit({"content":bytes.fromhex(ack),"signal":True})
+            
 
     def generate_msg(self)->str:
 
