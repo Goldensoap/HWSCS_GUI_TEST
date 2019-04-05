@@ -285,7 +285,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             datastr[_datalen-1-i]=num  #给数组赋值，采用小端模式
         CRC = crc32.cal_crc(datastr,_datalen) #计算CRC码，返回整数
 
-        #还原8位无符号整数16进制形式
+        #32bit无符号整数16进制形式
         if CRC < 0:
             CRC = 0x100000000+CRC
         CRC = format(CRC,'x')
@@ -293,6 +293,26 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             CRC = '0'+CRC
 
         return  CRC 
+
+    def crc8_check(self,data:bytes)->str:
+        r'''CRC8校验函数
+        '''
+        crc8 = CDLL("libcrc8.dll")
+        datalen = len(data)
+        DATASTR = c_uint8 * datalen
+        datastr = DATASTR()
+        for i in range(datalen):
+            datastr[i] = int(data[i]) # 大端模式
+        CRC = crc8.get_crc8(datastr,datalen)
+
+        #8bit 无符号整数16进制形式
+        if CRC < 0:
+            CRC = 0x100 +CRC
+        CRC = format(CRC,'x')
+        if len(CRC)==1:
+            CRC = '0'+CRC
+        
+        return CRC
 
     def msg_pack(self,content:str)->str:
         r'''模拟mesh信息打包函数，负责校验和帧包装
@@ -305,7 +325,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         EOT = "04"
         ESC = "1B"
 
-        crc = self.crc_check(bytes.fromhex(content))
+        crc = self.crc8_check(bytes.fromhex(content))
         msgstr = content+crc
 
         msg_bytes_list =[]

@@ -3,3 +3,4 @@ text.exe
 build
 dist
 *.spec
+*.ipch
