@@ -95,9 +95,11 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.SerialPortTypeBox.activated.connect(self.select_port_type) # 串口类型选择
         self.SerialPortTypeBox_2.activated.connect(self.select_port_type_2)
         self.OpenPortButton.clicked.connect(self.open_port) #打开串口1
+        self.OpenPortButton.setEnabled(False)
         self.ClosePortButton.clicked.connect(self.close_port) #关闭串口1
         self.ClosePortButton.setEnabled(False)
         self.OpenPortButton_2.clicked.connect(self.open_port_2) #打开串口2
+        self.OpenPortButton_2.setEnabled(False)
         self.ClosePortButton_2.clicked.connect(self.close_port_2) #关闭串口2
         self.ClosePortButton_2.setEnabled(False)
 
@@ -313,6 +315,9 @@ class MyWindow(QMainWindow, Ui_MainWindow):
 
         self.port = self.SerialPortTypeBox.currentText()
         self.port_2 = self.SerialPortTypeBox_2.currentText()
+
+        self.OpenPortButton.setEnabled(True)
+        self.OpenPortButton_2.setEnabled(True)
 
     def crc_check(self,data:bytes)->str:
         r'''CRC校验函数
