@@ -3,6 +3,7 @@ import random
 import time
 from ctypes import *
 import serial
+import serial.tools.list_ports
 from cmd_test_ui  import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QMainWindow
@@ -51,14 +52,30 @@ class UartThread(QThread):
         if "signal" in value:
             self.signal = value["signal"]
 
+class UartPortCheckThread(QThread):
+
+    trigger = pyqtSignal(list)
+    def __init__(self,parent=None):
+        super(UartPortCheckThread,self).__init__()
+        self.portlist = []
+
+    def run(self):
+        while True:
+            port = serial.tools.list_ports.comports()
+            for i,element in enumerate(port):
+                port[i] = element.device
+            if port != self.portlist:
+                self.portlist = port 
+                self.trigger.emit(self.portlist)
+
 class MyWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MyWindow,self).__init__()
         self.setupUi(self)
         self.init_option()
         self.cmd_type = "01" #时间同步
-        self.port_type = "COM" #串口平台
-        self.port_type_2 = "COM"
+        self.port = None #串口
+        self.port_2 = None
         self.msg_type = "01" #传感信息
         self.sensor_type = "01" #设备电量
         self.space_num = "01" #空间号
@@ -92,7 +109,10 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.uart_port_work_thread_2 = UartThread(self) #串口2收发工作线程
         self.uart_port_work_thread_2.trigger.connect(self.uart_ACK_display_2)
 
-        
+        self.uart_port_check_thread = UartPortCheckThread(self) #系统串口检查
+        self.uart_port_check_thread.trigger.connect(self.uart_port_scan)
+        self.uart_port_check_thread.start()
+
         self.CMDTypeBox.activated.connect(self.select_cmd_type) # 指令类型选择
 
         self.MsgTypeBox.activated.connect(self.select_msg_type) # 信息类型选择
@@ -101,8 +121,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.SpaceNumBox.activated.connect(self.select_space_num)# 设备空间号选择
 
     def open_port(self):
-        port = self.port_type+self.PortName.text() #获取串口设备名称
-        self.uart_port_work_thread.pipe.emit({"port":port})
+        self.uart_port_work_thread.pipe.emit({"port":self.port})
         self.uart_port_work_thread.start() # 开启串口1工作线程
 
         self.SendCMDButton.setEnabled(True)
@@ -117,8 +136,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.OpenPortButton.setEnabled(True)
 
     def open_port_2(self):
-        port = self.port_type_2+self.PortName_2.text() #获取串口设备名称
-        self.uart_port_work_thread_2.pipe.emit({"port":port})
+        self.uart_port_work_thread_2.pipe.emit({"port":self.port_2})
         self.uart_port_work_thread_2.start() # 开启串口2工作线程
 
         self.SendMsgButton.setEnabled(True)
@@ -250,12 +268,12 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def select_port_type(self):
         r'''选择串口类型（windows/linux）
         '''
-        self.port_type = self.SerialPortTypeBox.currentText()
+        self.port = self.SerialPortTypeBox.currentText()
 
     def select_port_type_2(self):
         r'''选择串口2类型（windows/linux）
         '''
-        self.port_type_2 = self.SerialPortTypeBox_2.currentText()
+        self.port_2 = self.SerialPortTypeBox_2.currentText()
 
     def uart_ACK_display(self,value:dict):
         r'''串口1信号回调函数
@@ -283,6 +301,18 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         r'''串口2信号回调函数
         '''
         self.ACKDisplay_2.append(value["ACK"]+"字节数："+str(len(value["ACK"])))
+
+    def uart_port_scan(self,ports:list):
+        r'''串口扫描更新回调
+        '''
+        self.SerialPortTypeBox.clear()
+        self.SerialPortTypeBox.addItems(ports)
+
+        self.SerialPortTypeBox_2.clear()
+        self.SerialPortTypeBox_2.addItems(ports)
+
+        self.port = self.SerialPortTypeBox.currentText()
+        self.port_2 = self.SerialPortTypeBox_2.currentText()
 
     def crc_check(self,data:bytes)->str:
         r'''CRC校验函数
