@@ -74,12 +74,14 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.init_option()
         self.cmd_type = "01" #时间同步
-        self.port = None #串口
-        self.port_2 = None
+        self.port = None #串口1
+        self.port_2 = None #串口2
         self.msg_type = "01" #传感信息
         self.sensor_type = "01" #设备电量
         self.space_num = "01" #空间号
         self.sensor_num = "01" #传感器编号
+        self.demo_data_tree = {} #演示信息存储
+        self.timebase = 0  #演示时间基准
 
     def init_option(self):
         r'''初始化UI操作逻辑
@@ -121,6 +123,37 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.SensorTypeBox.activated.connect(self.select_sensor_type)# 传感器类型选择
         self.SensorNumBox.activated.connect(self.select_sensor_num)# 传感器编号选择
         self.SpaceNumBox.activated.connect(self.select_space_num)# 设备空间号选择
+        r'''演示选项卡组件
+        '''
+        self.StartDemo.clicked.connect(self.start_demo)#开始演示
+        self.EndDemo.clicked.connect(self.end_demo)#关闭演示
+        self.timer = QTimer(self)#设置演示轮询定时器
+        self.timer.timeout.connect(self.demo_cmd_poll) 
+
+    def start_demo(self):
+        self.uart_port_work_thread.trigger.connect(self.demo_display)
+        self.timer.start(1000) #轮询周期1s
+        self.timebase = int(time.time())
+
+    def end_demo(self):
+        self.timer.stop()
+        self.uart_port_work_thread.trigger.disconnect(self.demo_display)
+        self.timebase = 0
+
+    def demo_display(self,value:dict):
+        r'''检查表中是否有
+        '''
+        self.demo_data_tree = {}
+
+    def demo_cmd_poll(self):
+        
+        timestamp = format(int(time.time()),'x')
+        content = "01"+timestamp
+        cmdstr ,_,_= self.cmd_pack(content)  #包装命令帧
+        self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
+
+
+
 
     def open_port(self):
         self.uart_port_work_thread.pipe.emit({"port":self.port})
