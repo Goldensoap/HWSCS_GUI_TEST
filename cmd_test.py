@@ -314,23 +314,18 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         r'''串口1信号回调函数
         '''
         
-        self.ACKDisplay.append(str(value["ACK"])+"字节数："+str(len(value["ACK"])))
-        if len(value["ACK"])<15:
-            recv = ""
-            for i in value["ACK"][:-2]:
-                temp = format(int(i),'x')
-                if len(temp) % 2 != 0:
-                    temp = '0'+temp
-                recv +=temp
-            bytenum = len(recv)/2
-            if bytenum == 1: #收到ACK
-                self.ACKParserWindow.setText("收到指令ACK："+recv)
-            elif bytenum >= 8 and bytenum < 10:
-                self.ACKParserWindow.setText(f"""传感器编号：  {recv[:2]}
-                                                设备内网地址：{recv[2:6]}
-                                                时间戳：  {recv[6:14]}
-                                                设备数据：{recv[14:]}
-                                                """)
+        if type(value["ACK"]) == bytes:
+            contain = value["ACK"].decode("ascii")
+            self.ACKDisplay.append(contain+"字节数："+str(len(contain)))
+
+            contain = eval(contain)
+            self.ACKParserWindow.append(f"""响应类型：{contain["Type"]}
+                                            响应内容：{contain["Content"]}
+                                        """)
+        else:
+            contain = str(value["ACK"])
+            self.ACKDisplay.append(contain)
+
 
     def uart_ACK_display_2(self,value:dict):
         r'''串口2信号回调函数
