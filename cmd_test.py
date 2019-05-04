@@ -6,7 +6,7 @@ import serial
 import serial.tools.list_ports
 from cmd_test_ui  import *
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem
 
 
 class UartThread(QThread):
@@ -80,7 +80,10 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.sensor_type = "01" #设备电量
         self.space_num = "01" #空间号
         self.sensor_num = "01" #传感器编号
-        self.demo_data_tree = {} #演示信息存储
+
+        self.demo_space = {} #演示空间选项
+        self.demo_display_space = None
+        self.demo_data_table = {}#演示数据表
         self.timebase = 0  #演示时间基准
 
     def init_option(self):
@@ -126,33 +129,112 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         r'''演示选项卡组件
         '''
         self.StartDemo.clicked.connect(self.start_demo)#开始演示
+        self.StartDemo.setEnabled(False)
         self.EndDemo.clicked.connect(self.end_demo)#关闭演示
+        self.EndDemo.setEnabled(False)
         self.timer = QTimer(self)#设置演示轮询定时器
         self.timer.timeout.connect(self.demo_cmd_poll) 
+        self.SpaceBox.activated.connect(self.select_display_space)#选择激活页面
 
     def start_demo(self):
-        self.uart_port_work_thread.trigger.connect(self.demo_display)
+        self.uart_port_work_thread.trigger.connect(self.demo_data_struct) #串口1线程绑定显示窗口
         self.timer.start(1000) #轮询周期1s
-        self.timebase = int(time.time())
+        self.timebase = int(time.time()) #设定时间戳基准
+
+        self.StartDemo.setEnabled(False)
+        self.EndDemo.setEnabled(True)
 
     def end_demo(self):
         self.timer.stop()
-        self.uart_port_work_thread.trigger.disconnect(self.demo_display)
-        self.timebase = 0
+        self.uart_port_work_thread.trigger.disconnect(self.demo_data_struct) #串口1线程解绑显示窗口
+        self.timebase = 0 #时间戳基准归零
 
-    def demo_display(self,value:dict):
-        r'''检查表中是否有
+        if self.ClosePortButton.isEnabled():
+            self.StartDemo.setEnabled(True)
+        self.EndDemo.setEnabled(False)
+
+    def demo_data_struct(self,value:dict):
+
+        tree = self.demo_data_table
+        contain = eval(value["ACK"].decode("ascii"))
+        if contain["Type"] == "SENSOR":
+            contain = contain["Content"]
+            
+            if contain["Space"] in tree:
+                if contain["Type"] in tree[contain["Space"]]:
+                    if contain["Device"] in tree[contain["Space"]][contain["Type"]]:
+                        if contain["Sensor"] in tree[contain["Space"]][contain["Type"]][contain["Device"]]:
+                            tree[contain["Space"]][contain["Type"]][contain["Device"]][contain["Sensor"]] = {"Data":contain["Data"],"Time":contain["Time"]}
+                        else:
+                            tree[contain["Space"]][contain["Type"]][contain["Device"]].update({contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}})
+                    else:
+                        tree[contain["Space"]][contain["Type"]].update({contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}})
+                else:
+                    tree[contain["Space"]].update({contain["Type"]:{contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}}})
+            else:
+                tree.update({contain["Space"]:{contain["Type"]:{contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}}}})
+
+            self.demo_data_table = tree
+
+            keys = list(tree.keys())
+            keys = [str(i) for i in keys]
+            if keys != self.demo_space:       
+                self.SpaceBox.clear()
+                self.SpaceBox.addItems(keys)
+                self.demo_display_space = self.SpaceBox.currentText()
+                self.demo_space = keys
+            #显示表和树形结构
+            self.demo_display(self.demo_data_table)
+            self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
+
+    def select_display_space(self):
+        self.demo_display_space = self.SpaceBox.currentText()
+
+    def demo_display(self,table:dict):
+        r'''
         '''
-        self.demo_data_tree = {}
+        self.DemoDataBrowser.setText(str(table))
+
+    def demo_tree_display(self,table:dict):
+        self.SpaceItemTree.clear()
+        #设置根节点
+        
+        for typ in table:
+            type_node=QTreeWidgetItem(self.SpaceItemTree)
+            type_node.setText(0,f"传感类型{typ}")
+            for i,dev in enumerate(table[typ]):
+                device_node=QTreeWidgetItem(type_node)
+                device_node.setText(0,f"设备{i+1}")
+                device_node.setText(1,str(dev))
+                for sen in table[typ][dev]:
+                    sensor_node=QTreeWidgetItem(device_node)
+                    sensor_node.setText(0,f"传感器{sen}")
+
+                    data_node=QTreeWidgetItem(sensor_node)
+                    data_node.setText(0,f"数据")
+                    data_node.setText(1,str(table[typ][dev][sen]["Data"]))
+
+                    time_node=QTreeWidgetItem(sensor_node)
+                    time_node.setText(0,f"时间戳")
+                    t = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(table[typ][dev][sen]["Time"]))
+                    time_node.setText(1,t)
+
+        self.SpaceItemTree.expandAll()
+
 
     def demo_cmd_poll(self):
-        
-        timestamp = format(int(time.time()),'x')
-        content = "01"+timestamp
-        cmdstr ,_,_= self.cmd_pack(content)  #包装命令帧
-        self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
 
-
+        if self.OpenPortButton.isEnabled():
+            self.DemoDataBrowser.setText("请打开串口1")
+        else:
+            timestamp = format(int(time.time()),'x')
+            content = "01"+timestamp
+            cmdstr ,_,_= self.cmd_pack(content)  #包装命令帧
+            self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
+            time.sleep(0.1)
+            content = "03"+"0001"
+            cmdstr ,_,_= self.cmd_pack(content)  #包装命令帧
+            self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
 
 
     def open_port(self):
@@ -162,6 +244,10 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.SendCMDButton.setEnabled(True)
         self.ClosePortButton.setEnabled(True)
         self.OpenPortButton.setEnabled(False)
+        if self.EndDemo.isEnabled():
+            pass
+        else:
+            self.StartDemo.setEnabled(True)
 
     def close_port(self):
         self.uart_port_work_thread.pipe.emit({"signal":"close"})
