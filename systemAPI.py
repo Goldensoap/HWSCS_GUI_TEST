@@ -127,3 +127,26 @@ class Tools():
         final=''
         final =SOH+final.join(cmd_bytes_list)+EOT
         return final, label, crc
+
+    def update_data_tree(self,tree:dict,contain:dict)->bool:
+
+        flag = False
+        if contain["Space"] in tree:
+            if contain["Type"] in tree[contain["Space"]]:
+                if contain["Device"] in tree[contain["Space"]][contain["Type"]]:
+                    if contain["Sensor"] in tree[contain["Space"]][contain["Type"]][contain["Device"]]:
+                        pass
+                    else:
+                        tree[contain["Space"]][contain["Type"]][contain["Device"]].update({contain["Sensor"]:None})
+                        flag = True
+                else:
+                    tree[contain["Space"]][contain["Type"]].update({contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}})
+                    flag = True
+            else:
+                tree[contain["Space"]].update({contain["Type"]:{contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}}})
+                flag = True
+        else:
+            tree.update({contain["Space"]:{contain["Type"]:{contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}}}})
+            flag = True
+        
+        return flag

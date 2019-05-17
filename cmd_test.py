@@ -162,21 +162,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         contain = eval(value["ACK"].decode("ascii"))
         if contain["Type"] == "SENSOR":
             contain = contain["Content"]
-            
-            if contain["Space"] in tree:
-                if contain["Type"] in tree[contain["Space"]]:
-                    if contain["Device"] in tree[contain["Space"]][contain["Type"]]:
-                        if contain["Sensor"] in tree[contain["Space"]][contain["Type"]][contain["Device"]]:
-                            tree[contain["Space"]][contain["Type"]][contain["Device"]][contain["Sensor"]] = {"Data":contain["Data"],"Time":contain["Time"]}
-                        else:
-                            tree[contain["Space"]][contain["Type"]][contain["Device"]].update({contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}})
-                    else:
-                        tree[contain["Space"]][contain["Type"]].update({contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}})
-                else:
-                    tree[contain["Space"]].update({contain["Type"]:{contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}}})
-            else:
-                tree.update({contain["Space"]:{contain["Type"]:{contain["Device"]:{contain["Sensor"]:{"Data":contain["Data"],"Time":contain["Time"]}}}}})
-
+            flag = self.api.update_data_tree(tree,contain)
             self.demo_data_table = tree
 
             keys = list(tree.keys())
@@ -187,11 +173,13 @@ class MyWindow(QMainWindow, Ui_MainWindow):
                 self.demo_display_space = self.SpaceBox.currentText()
                 self.demo_space = keys
             #显示表和树形结构
-            self.demo_display(self.demo_data_table)
-            self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
+            if flag == True:
+                self.demo_display(self.demo_data_table)
+                self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
 
     def select_display_space(self):
         self.demo_display_space = self.SpaceBox.currentText()
+        self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
 
     def demo_display(self,table:dict):
         r'''
@@ -212,15 +200,6 @@ class MyWindow(QMainWindow, Ui_MainWindow):
                 for sen in table[typ][dev]:
                     sensor_node=QTreeWidgetItem(device_node)
                     sensor_node.setText(0,f"传感器{sen}")
-
-                    data_node=QTreeWidgetItem(sensor_node)
-                    data_node.setText(0,f"数据")
-                    data_node.setText(1,str(table[typ][dev][sen]["Data"]))
-
-                    time_node=QTreeWidgetItem(sensor_node)
-                    time_node.setText(0,f"时间戳")
-                    t = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(table[typ][dev][sen]["Time"]))
-                    time_node.setText(1,t)
 
         self.SpaceItemTree.expandAll()
 
