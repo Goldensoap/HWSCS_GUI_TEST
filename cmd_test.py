@@ -8,7 +8,7 @@ from cmd_test_ui  import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem
 
-
+timec = 0
 class UartThread(QThread):
     r'''uart function ,this class is used in writing attributes to usb
     '''
@@ -26,6 +26,7 @@ class UartThread(QThread):
         self.wait()
 
     def run(self):
+        global timec
         try:
             with serial.Serial(port=self.portName,baudrate=115200,timeout=0.1) as ser:
                 while True:
@@ -33,12 +34,13 @@ class UartThread(QThread):
                         self.signal = False
                         break
                     elif self.signal == True: # 有发送内容，串口发送
+                        timec = time.time()
                         ser.write(self.content)
                         self.signal = False
                     else: # 监听串口
                         ACK = ser.readline()
                         if len(ACK)!=0:
-                            self.trigger.emit({"ACK":ACK})
+                            self.trigger.emit({"ACK":ACK,"Time":time.time()})
 
         except Exception as e:
             ACK ="发生错误：{}".format(e)
@@ -399,7 +401,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def uart_ACK_display(self,value:dict):
         r'''串口1信号回调函数
         '''
-        
+        global timec
         if type(value["ACK"]) == bytes:
             contain = value["ACK"].decode("ascii")
             self.ACKDisplay.append(contain+"字节数："+str(len(contain)))
@@ -407,6 +409,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             contain = eval(contain)
             self.ACKParserWindow.append(f"""响应类型：{contain["Type"]}
                                             响应内容：{contain["Content"]}
+                                            响应时间：{value["Time"]-timec}s
                                         """)
         else:
             contain = str(value["ACK"])
