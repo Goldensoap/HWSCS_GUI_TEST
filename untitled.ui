@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>562</width>
-    <height>574</height>
+    <width>697</width>
+    <height>689</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -81,75 +81,32 @@
         <string>系统演示</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_5">
-        <item row="4" column="5">
-         <widget class="QLabel" name="label_23">
-          <property name="text">
-           <string>传感器信息</string>
-          </property>
-         </widget>
+        <item row="0" column="0" colspan="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <widget class="QLabel" name="label_24">
+            <property name="text">
+             <string>使用串口1</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="StartDemo">
+            <property name="text">
+             <string>开始演示</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="EndDemo">
+            <property name="text">
+             <string>结束演示</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
-        <item row="3" column="0" colspan="7">
-         <widget class="QTreeWidget" name="SpaceItemTree">
-          <property name="columnCount">
-           <number>2</number>
-          </property>
-          <column>
-           <property name="text">
-            <string>类型</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>值</string>
-           </property>
-          </column>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="2">
-         <widget class="QLabel" name="label_22">
-          <property name="text">
-           <string>空间内工作节点与传感器</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="6">
-         <spacer name="horizontalSpacer_5">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>191</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="4" column="0" rowspan="3" colspan="5">
-         <widget class="QTextBrowser" name="DemoDataBrowser"/>
-        </item>
-        <item row="0" column="2" colspan="2">
-         <widget class="QPushButton" name="EndDemo">
-          <property name="text">
-           <string>结束演示</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_24">
-          <property name="text">
-           <string>使用串口1</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QPushButton" name="StartDemo">
-          <property name="text">
-           <string>开始演示</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="4" colspan="3">
+        <item row="0" column="2" colspan="3">
          <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -162,7 +119,7 @@
           </property>
          </spacer>
         </item>
-        <item row="1" column="0" colspan="3">
+        <item row="1" column="0">
          <spacer name="horizontalSpacer_3">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -175,17 +132,21 @@
           </property>
          </spacer>
         </item>
-        <item row="1" column="5">
-         <widget class="QComboBox" name="SpaceBox"/>
+        <item row="1" column="1" colspan="3">
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>可选空间</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="SpaceBox"/>
+          </item>
+         </layout>
         </item>
-        <item row="1" column="3" colspan="2">
-         <widget class="QLabel" name="label_21">
-          <property name="text">
-           <string>可选空间</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="6">
+        <item row="1" column="4">
          <spacer name="horizontalSpacer_4">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -198,25 +159,45 @@
           </property>
          </spacer>
         </item>
-        <item row="5" column="5">
-         <widget class="QPushButton" name="ClearDemoWindow">
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_22">
           <property name="text">
-           <string>清空窗口</string>
+           <string>空间内工作节点与传感器</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="6">
-         <spacer name="horizontalSpacer_9">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+        <item row="3" column="0">
+         <widget class="QTreeWidget" name="SpaceItemTree">
+          <property name="columnCount">
+           <number>1</number>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>114</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
+          <column>
+           <property name="text">
+            <string>传感器目录</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QLabel" name="label_23">
+            <property name="text">
+             <string>传感器信息</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="ClearDemoWindow">
+            <property name="text">
+             <string>清空窗口</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="3" column="3" colspan="2">
+         <widget class="QGraphicsView" name="graphicsView"/>
         </item>
        </layout>
       </widget>
@@ -561,7 +542,7 @@
         <item row="0" column="2">
          <widget class="QLabel" name="label_19">
           <property name="text">
-           <string>综合中心JSON信息</string>
+           <string>综合中心二进制数据</string>
           </property>
          </widget>
         </item>
@@ -571,7 +552,7 @@
         <item row="2" column="2">
          <widget class="QLabel" name="label_20">
           <property name="text">
-           <string>JSON信息解码</string>
+           <string>综合中心二进制数据解析</string>
           </property>
          </widget>
         </item>
@@ -642,8 +623,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>562</width>
-     <height>23</height>
+     <width>697</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>

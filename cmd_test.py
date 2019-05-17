@@ -174,17 +174,11 @@ class MyWindow(QMainWindow, Ui_MainWindow):
                 self.demo_space = keys
             #显示表和树形结构
             if flag == True:
-                self.demo_display(self.demo_data_table)
                 self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
 
     def select_display_space(self):
         self.demo_display_space = self.SpaceBox.currentText()
         self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
-
-    def demo_display(self,table:dict):
-        r'''
-        '''
-        self.DemoDataBrowser.setText(str(table))
 
     def demo_tree_display(self,table:dict):
         self.SpaceItemTree.clear()
@@ -193,10 +187,9 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         for typ in table:
             type_node=QTreeWidgetItem(self.SpaceItemTree)
             type_node.setText(0,f"传感类型{typ}")
-            for i,dev in enumerate(table[typ]):
+            for dev in table[typ]:
                 device_node=QTreeWidgetItem(type_node)
-                device_node.setText(0,f"设备{i+1}")
-                device_node.setText(1,str(dev))
+                device_node.setText(0,f"设备{str(dev)}")
                 for sen in table[typ][dev]:
                     sensor_node=QTreeWidgetItem(device_node)
                     sensor_node.setText(0,f"传感器{sen}")
