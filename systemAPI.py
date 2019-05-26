@@ -1,6 +1,8 @@
 import random
 from ctypes import CDLL,c_uint,c_uint8
 
+from sqliteAPI import *
+
 
 class Tools():
 
