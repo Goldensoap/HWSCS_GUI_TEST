@@ -2,7 +2,7 @@ import sys
 import time
 import serial
 import serial.tools.list_ports
-from systemAPI import Tools
+from systemAPI import *
 from cmd_test_ui  import Ui_MainWindow
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem
@@ -87,8 +87,6 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.demo_data_table = {}#演示数据表
         self.timebase = 0  #演示时间基准
 
-        self.api = Tools()
-
     def init_option(self):
         r'''初始化UI操作逻辑
         '''
@@ -141,7 +139,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
 
     def start_demo(self):
         self.uart_port_work_thread.trigger.connect(self.demo_data_struct) #串口1线程绑定显示窗口
-        self.timer.start(1000) #轮询周期1s
+        self.timer.start(5000) #轮询周期5s
         self.timebase = int(time.time()) #设定时间戳基准
 
         self.StartDemo.setEnabled(False)
@@ -162,7 +160,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         contain = eval(value["ACK"].decode("ascii"))
         if contain["Type"] == "SENSOR":
             contain = contain["Content"]
-            flag = self.api.update_data_tree(tree,contain)
+            flag = update_data_tree(tree,contain)
             self.demo_data_table = tree
 
             keys = list(tree.keys())
@@ -175,6 +173,9 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             #显示表和树形结构
             if flag == True:
                 self.demo_tree_display(self.demo_data_table[eval(self.demo_display_space)])
+            a=[contain]
+            insert_data(a)
+        
 
     def select_display_space(self):
         self.demo_display_space = self.SpaceBox.currentText()
@@ -204,11 +205,11 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         else:
             timestamp = format(int(time.time()),'x')
             content = "01"+timestamp
-            cmdstr ,_,_= self.api.cmd_pack(content)  #包装命令帧
+            cmdstr ,_,_= cmd_pack(content)  #包装命令帧
             self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
             time.sleep(0.1)
             content = "03"+"0001"
-            cmdstr ,_,_= self.api.cmd_pack(content)  #包装命令帧
+            cmdstr ,_,_= cmd_pack(content)  #包装命令帧
             self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
 
 
@@ -266,7 +267,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         else:
             content = self.cmd_type+content
 
-        cmdstr ,label,crc= self.api.cmd_pack(content)  #包装命令帧
+        cmdstr ,label,crc= cmd_pack(content)  #包装命令帧
 
         self.CRCDisplay.setText(crc) # 在UI中显示相关内容
         self.CMDLabelDisplay.setText(label)
@@ -280,7 +281,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         cmd = bytes.fromhex(self.generate_cmd())#获取指令内容,转换为二进制
         self.uart_port_work_thread.pipe.emit({"content":cmd,"signal":True})
         if self.ACKcheck.isChecked(): #模拟mesh回复ACK
-            ack,_ = self.api.msg_pack("03"+self.CMDLabelDisplay.toPlainText())
+            ack,_ = msg_pack("03"+self.CMDLabelDisplay.toPlainText())
             time.sleep(0.1)
             self.uart_port_work_thread_2.pipe.emit({"content":bytes.fromhex(ack),"signal":True})
             
@@ -295,7 +296,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         elif self.msg_type == "02":
             content = ''
 
-        msgstr,crc=self.api.msg_pack(content)
+        msgstr,crc=msg_pack(content)
 
         self.MsgCRCdisplay.setText(crc) # 在UI中显示相关内容
         self.MsgflowDisplay.setText(msgstr+"字节数:"+str(int(len(msgstr)/2)))
@@ -311,7 +312,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def select_msg_type(self):
         r'''选择mesh信息类型
         '''
-        type_dict = self.api.mesh信息类型
+        type_dict = mesh信息类型
         self.msg_type = type_dict[self.MsgTypeBox.currentText()]
 
     def select_space_num(self):
@@ -325,7 +326,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def select_sensor_type(self):
         r'''选择传感器类型
         '''
-        type_dict = self.api.传感器类型
+        type_dict = 传感器类型
         self.sensor_type =type_dict[self.SensorTypeBox.currentText()]
 
     def select_sensor_num(self):
@@ -339,7 +340,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def select_cmd_type(self):
         r'''选择要发送的指令类型
         '''
-        type_dict = self.api.指令类型
+        type_dict = 指令类型
 
         self.cmd_type = type_dict[self.CMDTypeBox.currentText()]
 
