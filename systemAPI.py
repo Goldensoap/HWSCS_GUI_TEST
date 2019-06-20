@@ -158,7 +158,7 @@ def insert_data(data:list):
     sql = SQL_option("test.db")
     for element in data:
         d = {"DEVICE":str,"TIME":int,"DATA":str}
-        d["DEVICE"]="S"+str(element["Sensor"])+str(element["Device"])
+        d["DEVICE"]="S"+str(element["Device"])+str(element["Sensor"])
         d["TIME"]=element["Time"]
         d["DATA"]=str(element["Data"])
 
@@ -169,10 +169,14 @@ def insert_data(data:list):
         a.append(d)
 
     sql.insert_to_table(a)
+    sql.close_db()
 
+def read_data(Sensor):
+    sql = SQL_option("test.db")
+    Sensor  = 'S'+Sensor
+    result = sql.select_from_table(Sensor)
+    sql.close_db()
+    return result
 
-
-        
-    
-
-    
+if __name__ == "__main__":
+    print(read_data("3ecd1")[1])

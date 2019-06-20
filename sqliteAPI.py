@@ -32,7 +32,17 @@ class SQL_option():
         
         return True
 
-    def delet_whole_table(self,table:str)->bool:
+    def select_from_table(self,table:str):
+
+        c = self.db.cursor()
+        result = c.execute(f"SELECT TIME, DATA FROM {table} ORDER BY TIME DESC LIMIT 1;")
+        for data in result:
+            a = data[0]
+            b = data[1]
+        c.close()
+        return a,b
+
+    def clear_whole_table_contains(self,table:str)->bool:
 
         c = self.db.cursor()
         c.execute(f"DELETE FROM {table};")
@@ -56,6 +66,13 @@ class SQL_option():
 
         return result
 
+    def delete_table(self,table:str):
+        c = self.db.cursor()
+        c.execute(f"DROP TABLE {table}")
+        self.db.commit()
+        c.close()
+        print(f"删除{table}表")
+
     def close_db(self):
         self.db.close()
         print(f"关闭{self.db_name}数据库")
@@ -63,7 +80,9 @@ class SQL_option():
 if __name__ == "__main__":
     data = [{"TIME":999,"DATA":999},{"TIME":1000,"DATA":154}]
     test = SQL_option("test.db")
+    #print(test.select_from_table("S11"))
     #print(test.is_table_exist("test"))
-    #test.delet_whole_table("test")
+    #test.clear_whole_table_contains("test")
     #test.create_new_table("test")
     #test.fun_insert("test",data)
+    #test.delete_table("S31")

@@ -6,6 +6,9 @@ from systemAPI import *
 from cmd_test_ui  import Ui_MainWindow
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem
+import pyqtgraph as pg
+import numpy as np
+
 
 timec = 0
 class UartThread(QThread):
@@ -73,6 +76,8 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MyWindow,self).__init__()
         self.setupUi(self)
+        self.list_num = 100
+        self.graph=self.set_graph_ui()
         self.init_option()
         self.cmd_type = "01" #时间同步
         self.port = None #串口1
@@ -87,6 +92,24 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.demo_data_table = {}#演示数据表
         self.timebase = 0  #演示时间基准
 
+        self.now_select_sensor = None
+        
+        self.xdata_list = []
+
+    def set_graph_ui(self):
+
+        pg.setConfigOptions(antialias=True)
+        win = pg.GraphicsLayoutWidget()
+        self.graphLayout.addWidget(win)
+
+        p = win.addPlot(title="传感器实时数据")
+        p.setLabel('left', text='数值', color='#ffffff')
+        p.setLabel('bottom', text='时间', units='s')
+        p.setRange(xRange=[0,self.list_num-1],padding=0)
+        p.showGrid(x=True, y=True)
+
+        return p
+        
     def init_option(self):
         r'''初始化UI操作逻辑
         '''
@@ -137,9 +160,15 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.timer.timeout.connect(self.demo_cmd_poll) 
         self.SpaceBox.activated.connect(self.select_display_space)#选择激活页面
 
+        self.graph_update_timer = QTimer(self)
+        self.graph_update_timer.timeout.connect(self.demo_graph_poll)
+        
+        self.SpaceItemTree.clicked.connect(self.demo_select_sensor)
+
     def start_demo(self):
         self.uart_port_work_thread.trigger.connect(self.demo_data_struct) #串口1线程绑定显示窗口
         self.timer.start(5000) #轮询周期5s
+        self.graph_update_timer.start(5000)
         self.timebase = int(time.time()) #设定时间戳基准
 
         self.StartDemo.setEnabled(False)
@@ -147,6 +176,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
 
     def end_demo(self):
         self.timer.stop()
+        self.graph_update_timer.stop()
         self.uart_port_work_thread.trigger.disconnect(self.demo_data_struct) #串口1线程解绑显示窗口
         self.timebase = 0 #时间戳基准归零
 
@@ -160,6 +190,8 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         contain = eval(value["ACK"].decode("ascii"))
         if contain["Type"] == "SENSOR":
             contain = contain["Content"]
+            while len(contain["Device"])<4:
+                contain["Device"] +='0'
             flag = update_data_tree(tree,contain)
             self.demo_data_table = tree
 
@@ -211,6 +243,27 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             content = "03"+"0001"
             cmdstr ,_,_= cmd_pack(content)  #包装命令帧
             self.uart_port_work_thread.pipe.emit({"content":bytes.fromhex(cmdstr),"signal":True}) #同步时间戳
+
+    def demo_graph_poll(self):
+       if self.now_select_sensor ==None:
+           pass 
+       else:
+            xdata, ydata = read_data(self.now_select_sensor)
+            
+            if len(self.xdata_list)<self.list_num:
+                self.xdata_list.append(float(ydata))
+            else:
+                self.xdata_list[:-1] = self.xdata_list[1:]
+                self.xdata_list.append(float(ydata))
+            
+            self.graph.plot().setData(self.xdata_list)
+
+    def demo_select_sensor(self):
+        item=self.SpaceItemTree.currentItem()
+        if item.text(0)[:3] == '传感器':
+            self.xdata_list = []
+            sensor = item.parent().text(0)[2:] + item.text(0)[3:]
+            self.now_select_sensor = sensor
 
 
     def open_port(self):
