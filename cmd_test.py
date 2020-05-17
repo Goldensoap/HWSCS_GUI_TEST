@@ -442,8 +442,10 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         self.port = self.SerialPortTypeBox.currentText()
         self.port_2 = self.SerialPortTypeBox_2.currentText()
 
-        self.OpenPortButton.setEnabled(True)
-        self.OpenPortButton_2.setEnabled(True)
+        if self.ClosePortButton.isEnabled() == False:
+            self.OpenPortButton.setEnabled(True)
+        if self.ClosePortButton_2.isEnabled() == False:
+            self.OpenPortButton_2.setEnabled(True)
 
 
 if __name__ == '__main__':
